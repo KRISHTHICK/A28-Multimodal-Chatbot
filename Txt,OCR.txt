@@ -1,0 +1,28 @@
+import pdfplumber
+from pdf2image import convert_from_path
+import pytesseract
+import tempfile
+
+def extract_text_and_ocr_from_pdf(uploaded_files):
+    all_text = ""
+    for file in uploaded_files:
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            tmp.write(file.read())
+            tmp_path = tmp.name
+
+        # 1. Extract normal text using pdfplumber
+        with pdfplumber.open(tmp_path) as pdf:
+            for page in pdf.pages:
+                text = page.extract_text()
+                if text:
+                    all_text += text + "\n"
+
+        # 2. Convert pages to images and OCR
+        images = convert_from_path(tmp_path)
+        for img in images:
+            ocr_text = pytesseract.image_to_string(img)
+            if ocr_text.strip():
+                all_text += ocr_text + "\n"
+
+    return all_text
